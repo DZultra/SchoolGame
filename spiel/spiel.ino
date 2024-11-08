@@ -37,20 +37,19 @@ const int laenge8 = 6;
 
 int position;
 int position1;
-int ldrValue;
-int ldrthreshold = 950; // Muss je nach Lichtverhältnisse angepasst werden
-int score = 0;
-int leuchtendeLED;
-int activeLED;
-int currentLED;
-int winscore = 10;
 int new_position;
+int speed = 15;
+int ldrValue;
+int ldrthreshold = 950; // Muss je nach Lichtverhältnisse angepasst werden (950 hatte bei mir funktioniert)
+int leuchtendeLED; // LED die aktuell leuchtet
+int currentLED; // Speichert die LED die zuletzt an war
+int score = 0; // Speichert Score
+int winscore = 10; // Score den man braucht um zu gewinnen
 
+bool LEDactive = false; // Ist aktuell eine LED an?
+bool gameActive = false; // Ist das Spiel aktiv
+bool lastpressgood; // Speichern des letzten Knopfdrucks
 bool richtung; // true -> Im Uhrzeigersinn | false -> gegen Uhrzeigersinn
-bool LEDactive = false;
-bool gameActive = false;
-bool buttonPressed = false;
-bool lastpressgood;
 
 /*
   Setup
@@ -58,7 +57,6 @@ bool lastpressgood;
 
 
 void setup() { // Setup
-  Serial.begin(9600);
   randomSeed(analogRead(randomSeedPin));
   gameActive = false;
   LEDactive = false;
@@ -67,9 +65,7 @@ void setup() { // Setup
   LED_Setup();
   Servo_Setup();
   LCD_Setup();
-
-  debug("Setup Complete");
-  delay(1000);
+  Serial_Setup();
 }
 
 /*
@@ -77,13 +73,10 @@ void setup() { // Setup
 */
 
 void loop() { // Loop
-  checkCoinInput();
+  checkCoinInput(); // Erst starten, wenn Münze eingeworfen wurde
   if (gameActive == false) {  // Wenn Game nicht active ist
-    lcd.setCursor(0, 0);
-    lcd.clear();
-    lcd.print("Enter Coin");
-    lcd.setCursor(0, 1);
-    lcd.print("to Start!");
+    lcd.setCursor(0, 0); lcd.clear(); lcd.print("Enter Coin");
+    lcd.setCursor(0, 1); lcd.print("to Start!");
     delay(10);
   } else {
     Spiel();
@@ -91,7 +84,7 @@ void loop() { // Loop
 }
 
 void Spiel() { // Spiel Logik
-  richtung = true;
+  richtung = true; // Im Uhrzeigersinn
   for (int pos = 0; pos <= 180; pos += 1) { 
     if (LEDactive == false) {  // Wenn keine LED an ist, dann
       randomLEDon();           // mache zufällige LED an
@@ -102,15 +95,15 @@ void Spiel() { // Spiel Logik
     }
     if(score == winscore) { game_win(); return; }
     Servo1.write(pos);
-    delay(15);
+    delay(speed);
   }
-  richtung = false;
+  richtung = false; // Gegen den Uhrzeigersinn
   for (int pos1 = 180; pos1 >= -10; pos1 -= 1) {
     if (LEDactive == false) {  // Wenn keine LED an ist, dann
       randomLEDon();           // mache zufällige LED an
     } 
     Servo1.write(pos1);
-    delay(15);
+    delay(speed);
     if (ButtonPressedAtRightTime() == false) {
       game_over();
       return;
@@ -121,7 +114,7 @@ void Spiel() { // Spiel Logik
 
 bool ButtonPressedAtRightTime() { // Wurde der Knopf richtig gedrückt?
   if (checkButton() == true) { // Knopf wurde gedrückt
-    //lcd.clear(); lcd.setCursor(0, 0); lcd.print("Button Pressed"); delay(1000);
+    //lcd.clear(); lcd.setCursor(0, 0); lcd.print("Button Pressed"); delay(1000); // Debug
     return checkWinkelIfButtonPressed(leuchtendeLED);
   }
   else { // Knopf nicht gedrückt
@@ -159,9 +152,9 @@ bool checkWinkelIfButtonPressed(int leuchtendeLED) { // Spiel-Logik wenn Knopf g
 }
 
 bool checkWinkelInListeIfButtonPressed(int leuchtendeLED, int* ledListe, int laenge) { // Spiel-Logik wenn Knopf gedrückt
-  //Knopf gedrückt
+  // Knopf gedrückt
   position = currentWinkel();
-  lcd.clear(); lcd.setCursor(0, 0); lcd.print("Position"); delay(1000); // Debug
+  //lcd.clear(); lcd.setCursor(0, 0); lcd.print("Position"); delay(1000); // Debug
   //cd.clear(); lcd.setCursor(0, 0); lcd.print(position); delay(1000); // Debug
   for (int i = 0; i < laenge; i++) { if (ledListe[i] == position) { // Ist die aktuelle Position über der leuchtenden LED?
       // Ja
@@ -259,27 +252,15 @@ bool checkWinkelInListeIfNotButtonPressed(int leuchtendeLED, int* ledListe, int 
 */
 
 void checkCoinInput() { // Coin Slot Überprüfung
-  if (gameActive == true) { return; }
+  if (gameActive == true) { return; } // Wenn das Spiel aktiv ist, soll keine Münze gefordert werden
   ldrValue = analogRead(ldrPin);
-  debug("LDR-Value: " + ldrValue);
   if (ldrValue < ldrthreshold) {
     gameActive = true;
-    lcd.setCursor(0,0);
-    lcd.clear();
-    lcd.print("Get Ready");
-    delay(1000);
-    lcd.clear();
-    lcd.print("3");
-    delay(1000);
-    lcd.clear();
-    lcd.print("2");
-    delay(1000);
-    lcd.clear();
-    lcd.print("1");
-    delay(1000);
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("Score: 0");
+    lcd.setCursor(0,0); lcd.clear(); lcd.print("Get Ready"); delay(1000);
+    lcd.clear(); lcd.print("3"); delay(1000);
+    lcd.clear(); lcd.print("2"); delay(1000);
+    lcd.clear(); lcd.print("1"); delay(1000);
+    lcd.clear(); lcd.setCursor(0,0); lcd.print("Score: 0");
   } else {
       if (gameActive) {
          return;
@@ -306,9 +287,7 @@ void game_win() { // Wenn Spiel gewonnen
   allLEDoff();
   lastpressgood = false;
   gameActive = false;
-  lcd.setCursor(0,0);
-  lcd.clear();
-  lcd.print("You Won!"); // Glückwunsch
+  lcd.setCursor(0,0); lcd.clear(); lcd.print("You Won!"); // Glückwunsch
   delay(5000);
   score = 0;
 }
@@ -326,7 +305,7 @@ void randomLEDon() { // Zufällige LED an
   currentLED = leuchtendeLED;
   leuchtendeLED = random(2, 9);  // Zufallszahl von 2 bis 8
   if (currentLED == leuchtendeLED) { // Verhindern, dass die selber LED zweimal hintereinander angeht
-    if (leuchtendeLED == 8) {
+    if (leuchtendeLED == 8) { // Wenn 8 angeht darf es nicht höher gehen, weil keine LED angeschlossen
       leuchtendeLED--; 
     } else {
       leuchtendeLED++;
@@ -347,12 +326,6 @@ void allLEDoff() { // Alle LEDs ausmachen
   digitalWrite(8,LOW);
 }
 
-void debug(char message) { // Debug Messages methodieren
-  lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print(message);
-}
-
 /*
   Setup
 */
@@ -362,6 +335,7 @@ void LCD_Setup() {
 }
 
 void LED_Setup() {
+  // Keine Lust auf For-Schleife
   pinMode(2, OUTPUT);
   pinMode(3, OUTPUT);
   pinMode(4, OUTPUT);
