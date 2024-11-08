@@ -38,7 +38,7 @@ const int laenge8 = 6;
 int position;
 int position1;
 int ldrValue;
-int ldrthreshold = 1000;
+int ldrthreshold = 950; // Muss je nach Lichtverhältnisse angepasst werden
 int score = 0;
 int leuchtendeLED;
 int activeLED;
@@ -102,7 +102,7 @@ void Spiel() { // Spiel Logik
     }
     if(score == winscore) { game_win(); return; }
     Servo1.write(pos);
-    delay(70);
+    delay(15);
   }
   richtung = false;
   for (int pos1 = 180; pos1 >= -10; pos1 -= 1) {
@@ -110,7 +110,7 @@ void Spiel() { // Spiel Logik
       randomLEDon();           // mache zufällige LED an
     } 
     Servo1.write(pos1);
-    delay(70);
+    delay(15);
     if (ButtonPressedAtRightTime() == false) {
       game_over();
       return;
@@ -161,8 +161,8 @@ bool checkWinkelIfButtonPressed(int leuchtendeLED) { // Spiel-Logik wenn Knopf g
 bool checkWinkelInListeIfButtonPressed(int leuchtendeLED, int* ledListe, int laenge) { // Spiel-Logik wenn Knopf gedrückt
   //Knopf gedrückt
   position = currentWinkel();
-  //lcd.clear(); lcd.setCursor(0, 0); lcd.print("Position"); delay(1000); // Debug
-  //lcd.clear(); lcd.setCursor(0, 0); lcd.print(position); delay(1000); // Debug
+  lcd.clear(); lcd.setCursor(0, 0); lcd.print("Position"); delay(1000); // Debug
+  //cd.clear(); lcd.setCursor(0, 0); lcd.print(position); delay(1000); // Debug
   for (int i = 0; i < laenge; i++) { if (ledListe[i] == position) { // Ist die aktuelle Position über der leuchtenden LED?
       // Ja
       //lcd.clear(); lcd.setCursor(0, 0); lcd.print("Debug1 PosGood"); delay(1000); // Debug
@@ -323,10 +323,10 @@ int currentWinkel() { // Aktueller Winkel des Servos
 }
 
 void randomLEDon() { // Zufällige LED an
-  currentLED == leuchtendeLED;
+  currentLED = leuchtendeLED;
   leuchtendeLED = random(2, 9);  // Zufallszahl von 2 bis 8
   if (currentLED == leuchtendeLED) { // Verhindern, dass die selber LED zweimal hintereinander angeht
-    if (leuchtendeLED == 2) {
+    if (leuchtendeLED == 8) {
       leuchtendeLED--; 
     } else {
       leuchtendeLED++;
@@ -369,8 +369,6 @@ void LED_Setup() {
   pinMode(6, OUTPUT);
   pinMode(7, OUTPUT);
   pinMode(8, OUTPUT);
-  pinMode(9, OUTPUT);
-  pinMode(10, OUTPUT);
 }
 
 void Servo_Setup() {
